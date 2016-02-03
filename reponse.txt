@@ -1,0 +1,9 @@
+Q1)
+bind socket_serveur: Address already in use
+
+Q2)si le client se déconnecte avant l'envoi du message de bienvenue, le serveur plante
+
+Q3)telnet: Unable to connect to remote host: Connection refused
+le serveur n'accepte pas les ipv6
+
+Q4) le serveur ne répond qu'à un seul client
