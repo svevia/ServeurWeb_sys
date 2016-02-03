@@ -8,7 +8,7 @@ int socket_serveur;
 
 int creer_serveur(int port){
 
-	socket_serveur = socket (AF_INET, SOCK_STREAM, 0);
+	socket_serveur = socket(AF_INET, SOCK_STREAM, 0);
 
 	struct sockaddr_in saddr;
 	saddr.sin_family = AF_INET;				/* Socket ipv4 */
@@ -21,7 +21,7 @@ int creer_serveur(int port){
 	}
 
 	if(bind(socket_serveur, (struct sockaddr*)& saddr, sizeof(saddr)) == -1){
-		perror("bind socker_serveur");
+		perror("bind socket_serveur");
 		return -1;
 	}
 
@@ -29,5 +29,5 @@ int creer_serveur(int port){
 		perror("listen socket_serveur");
 		return -1;
 	}
-	return 0;
+	return socket_serveur;
 }
