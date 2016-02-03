@@ -8,7 +8,7 @@
 #include "socket.h"
 
 int main(int argc, char **argv) {
-	initialiser_signaux();
+;
 	/* Arnold Robbins in the LJ of February ’95, describing RCS */
 	if(argc > 1 && strcmp(argv[1], "-advice") == 0) {
 		printf("Don’t Panic!\n");
@@ -30,7 +30,7 @@ int main(int argc, char **argv) {
 	while(1){
 		socket_client = accept(socket_serveur, NULL, NULL);
 		int pid= fork();
-
+		initialiser_signaux();
 		switch(pid){
 			case -1:
 				perror("fork");

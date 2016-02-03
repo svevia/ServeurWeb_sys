@@ -3,14 +3,31 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
+#include <sys/wait.h>
+
 
 int socket_serveur;
  /* écoute sur toutes les interfaces */
 
+void traitement_signal(){
+	//int status;
+	printf("signal ok \n");
+	wait(NULL);
+	//waitpid(0, &status, 0);
+}
 
 void initialiser_signaux(void){
+	struct sigaction sa ;
+	sa.sa_handler = traitement_signal;
+	sigemptyset(&sa.sa_mask);
+	sa.sa_flags = SA_RESTART;
+
 	if(signal(SIGPIPE, SIG_IGN) == SIG_ERR){
 		perror("signal");
+	}
+
+	if(sigaction(SIGCHLD, &sa, NULL) == -1){
+		perror("sigaction(SIGCHLD)");
 	}
 }
 
