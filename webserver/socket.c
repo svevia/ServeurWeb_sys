@@ -1,10 +1,18 @@
 #include <stdio.h>
+#include <signal.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
 
 int socket_serveur;
  /* écoute sur toutes les interfaces */
+
+
+void initialiser_signaux(void){
+	if(signal(SIGPIPE, SIG_IGN) == SIG_ERR){
+		perror("signal");
+	}
+}
 
 int creer_serveur(int port){
 
@@ -25,7 +33,7 @@ int creer_serveur(int port){
 		perror("Can not set SO_REUSEADDR option");
 		return -1;
 	}
-	
+
 	if(bind(socket_serveur, (struct sockaddr*)& saddr, sizeof(saddr)) == -1){
 		perror("bind socket_serveur");
 		return -1;
@@ -39,3 +47,4 @@ int creer_serveur(int port){
 
 	return socket_serveur;
 }
+
