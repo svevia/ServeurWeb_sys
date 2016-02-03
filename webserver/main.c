@@ -4,6 +4,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
+#include <sys/wait.h>
 #include "socket.h"
 
 int main(int argc, char **argv) {
@@ -28,34 +29,49 @@ int main(int argc, char **argv) {
 	}
 	while(1){
 		socket_client = accept(socket_serveur, NULL, NULL);
-		if(socket_client == -1) {
-			perror("accept");
-		}
+		int pid= fork();
 
-		const char * message_bienvenue = "Bonjour, bienvenue sur mon serveur\n";
-		sleep(1);
-		for(i=0; i<10; i++){
-			write(socket_client, message_bienvenue, strlen(message_bienvenue));
-		}
+		switch(pid){
+			case -1:
+				perror("fork");
+				return -1;
+			break;
 
-		char buf[80];
-		int j;
+			case 0:
+				if(socket_client == -1) {
+					perror("accept");
+				}
 
-		while(1){
-			j = read(socket_client,buf,80);
-			if(j == -1){
-				perror("read");
-				break;
-			}
-			if(j == 0){
-				printf("client deconnecte");
+				const char * message_bienvenue = "Bonjour, bienvenue sur mon serveur\n";
+				sleep(1);
+				for(i=0; i<10; i++){
+					write(socket_client, message_bienvenue, strlen(message_bienvenue));
+				}
+
+				char buf[80];
+				int j;
+
+				while(1){
+					j = read(socket_client,buf,80);
+					if(j == -1){
+						perror("read");
+						break;
+					}
+					if(j == 0){
+						printf("client deconnecte");
+						close(socket_client);
+						break;
+					}
+					if(write(socket_client,buf,j) == -1){
+						perror("write");
+						break;
+					}
+				}
+			break;
+
+			default:
+				printf("ok\n");
 				close(socket_client);
-				break;
-			}
-			if(write(socket_client,buf,j) == -1){
-				perror("write");
-				break;
-			}
 		}
 	}
 
