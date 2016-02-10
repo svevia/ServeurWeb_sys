@@ -20,12 +20,16 @@ int main(int argc, char **argv) {
 	int socket_client;
 	int socket_serveur= creer_serveur(8080);
 	int i;
+	FILE * file_client;
 
 	if(socket_serveur == -1){
 		return 1;
 	}
 	while(1){
 		socket_client = accept(socket_serveur, NULL, NULL);
+
+
+
 		int pid= fork();
 		initialiser_signaux();
 		switch(pid){
@@ -39,30 +43,38 @@ int main(int argc, char **argv) {
 					perror("accept");
 				}
 
+				file_client = fdopen(socket_client,"w+");
+
 				const char * message_bienvenue = "Bonjour, bienvenue sur mon serveur\n";
 				sleep(1);
 				for(i=0; i<10; i++){
-					write(socket_client, message_bienvenue, strlen(message_bienvenue));
+					fprintf(file_client, message_bienvenue);
+					fflush(file_client);
+					//write(socket_client, message_bienvenue, strlen(message_bienvenue));
 				}
 
 				char buf[80];
-				int j;
+				char *rd;
+				char* balise = "<serve>\n";
+		//		char* balise2 = "</serve>";
 
 				while(1){
-					j = read(socket_client,buf,80);
-					if(j == -1){
-						perror("read");
-						break;
-					}
-					if(j == 0){
-						printf("client deconnecte\n");
+
+					rd = fgets(buf, 80, file_client);
+
+					if(rd == NULL){
+						printf("deconnexion client\n");
 						close(socket_client);
 						break;
 					}
-					if(write(socket_client,buf,j) == -1){
-						perror("write");
+					int wr = fprintf(file_client,"%s%s", balise, buf);
+					fflush(file_client);
+
+					if(wr < 0){
+						perror("fprintf");
 						break;
 					}
+
 				}
 			exit(0);
 			break;
