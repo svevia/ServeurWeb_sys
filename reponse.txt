@@ -7,3 +7,19 @@ Q3)telnet: Unable to connect to remote host: Connection refused
 le serveur n'accepte pas les ipv6
 
 Q4) le serveur ne répond qu'à un seul client
+
+5.1.2
+
+Q3) lorsque le serveur est lancé et que curl se connecte, le serveur reçoit :
+
+GET / HTTP/1.1
+User-Agent: curl/7.38.0
+Host: localhost:8080
+Accept: */*
+
+Q4)
+GET : method token
+/ : cible
+HTTP/1.1 : protocol version
+
+

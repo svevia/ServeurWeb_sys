@@ -8,6 +8,47 @@
 #include <stdlib.h>
 #include "socket.h"
 
+void traiterClient(int socket_client){
+
+	char * bad_req = "HTTP/1.1 400 Bad Request\r\nConnection: close\r\nContent-Length: 17\r\n400 Bad request\r\n";
+	FILE * file_client = fdopen(socket_client,"w+");
+	char buf[80];
+	char *rd;
+
+	while(1){
+
+		rd = fgets(buf, 80, file_client);
+		printf("%s\n", buf);
+
+		char * req = strtok(buf, " ");
+
+		if(strcmp(req,"GET") == 0){
+
+			req = strtok(NULL, " ");
+
+			if(strcmp(req,"HTTP/1.1") == 0 || strcmp(req,"HTTP/1.0") == 0){
+				printf("ok");
+			}
+			else{
+				printf("HTTP");
+				fprintf(file_client,"%s",bad_req);
+			}
+		}
+		else{
+			printf("GET");
+			fprintf(file_client,"%s",bad_req);
+		}
+
+		if(rd == NULL){
+
+			printf("Deconnexion Client\n");
+			close(socket_client);
+			break;
+		}
+	}
+	exit(0);
+}
+
 int main(int argc, char **argv) {
 
 	/* Arnold Robbins in the LJ of February ’95, describing RCS */
@@ -19,71 +60,37 @@ int main(int argc, char **argv) {
 
 	int socket_client;
 	int socket_serveur= creer_serveur(8080);
-	int i;
-	FILE * file_client;
 
 	if(socket_serveur == -1){
 		return 1;
 	}
+
 	while(1){
+
 		socket_client = accept(socket_serveur, NULL, NULL);
-
-
+		if(socket_client == -1) {
+			perror("accept");
+		}
 
 		int pid= fork();
 		initialiser_signaux();
+
 		switch(pid){
+
 			case -1:
 				perror("fork");
 				return -1;
 			break;
 
 			case 0:
-				if(socket_client == -1) {
-					perror("accept");
-				}
-
-				file_client = fdopen(socket_client,"w+");
-
-				const char * message_bienvenue = "Bonjour, bienvenue sur mon serveur\n";
-				sleep(1);
-				for(i=0; i<10; i++){
-					fprintf(file_client, message_bienvenue);
-					fflush(file_client);
-					//write(socket_client, message_bienvenue, strlen(message_bienvenue));
-				}
-
-				char buf[80];
-				char *rd;
-				char* balise = "<serve>\n";
-		//		char* balise2 = "</serve>";
-
-				while(1){
-
-					rd = fgets(buf, 80, file_client);
-
-					if(rd == NULL){
-						printf("deconnexion client\n");
-						close(socket_client);
-						break;
-					}
-					int wr = fprintf(file_client,"%s%s", balise, buf);
-					fflush(file_client);
-
-					if(wr < 0){
-						perror("fprintf");
-						break;
-					}
-
-				}
-			exit(0);
+			traiterClient(socket_client);	
 			break;
 
 			default:
 				close(socket_client);
-				printf("ok\n");
 		}
 	}
 
 	return 0;
 }
+

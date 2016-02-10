@@ -5,12 +5,10 @@
 #include <arpa/inet.h>
 #include <sys/wait.h>
 
-
 int socket_serveur;
 
 void traitement_signal(){
 	int status;
-	printf("signal ok \n");
 	if(waitpid(-1, &status, WNOHANG) == -1){
 		perror("waitpid");
 	}
