@@ -7,17 +7,17 @@
 
 
 int socket_serveur;
- /* écoute sur toutes les interfaces */
 
 void traitement_signal(){
-	//int status;
+	int status;
 	printf("signal ok \n");
-	wait(NULL);
-	//waitpid(0, &status, 0);
+	if(waitpid(-1, &status, WNOHANG) == -1){
+		perror("waitpid");
+	}
 }
 
 void initialiser_signaux(void){
-	struct sigaction sa ;
+	struct sigaction sa ;	
 	sa.sa_handler = traitement_signal;
 	sigemptyset(&sa.sa_mask);
 	sa.sa_flags = SA_RESTART;

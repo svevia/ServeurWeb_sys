@@ -5,20 +5,17 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <sys/wait.h>
+#include <stdlib.h>
 #include "socket.h"
 
 int main(int argc, char **argv) {
-;
+
 	/* Arnold Robbins in the LJ of February ’95, describing RCS */
 	if(argc > 1 && strcmp(argv[1], "-advice") == 0) {
 		printf("Don’t Panic!\n");
 		return 42;
 	}
 	printf("Need an advice?\n");
-
-
-
-
 
 	int socket_client;
 	int socket_serveur= creer_serveur(8080);
@@ -58,7 +55,7 @@ int main(int argc, char **argv) {
 						break;
 					}
 					if(j == 0){
-						printf("client deconnecte");
+						printf("client deconnecte\n");
 						close(socket_client);
 						break;
 					}
@@ -67,11 +64,12 @@ int main(int argc, char **argv) {
 						break;
 					}
 				}
+			exit(0);
 			break;
 
 			default:
-				printf("ok\n");
 				close(socket_client);
+				printf("ok\n");
 		}
 	}
 
