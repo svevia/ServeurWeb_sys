@@ -8,40 +8,72 @@
 #include <stdlib.h>
 #include "socket.h"
 
-void traiterClient(int socket_client){
 
-	char * msg_bienvenue = "Bonjour, bienvenue sur notre serveur.\r\n";
-	char * bad_req = "HTTP/1.1 400 Bad Request\r\nConnection: close\r\nContent-Length: 17\r\n400 Bad request\r\n";
-	char * good_req = "HTTP/1.1 200 OK\r\nContent-Length: ";
-	FILE * file_client = fdopen(socket_client,"w+");
-	char buf[80];
-	char *rd;
+void traiterHTTP(FILE *file_client, char *http){
 
-	while(1){
+	printf(http);
+	const char * msg_bienvenue = "Bonjour, bienvenue sur notre serveur.\r\n";
+	const char * bad_req = "HTTP/1.1 400 Bad Request\r\nConnection: close\r\nContent-Length: 17\r\n400 Bad request\r\n";
+	const char * url_req = "HTTP/1.1 404 Page not found\r\nConnection: close\r\nContent-Length: 20\r\n404 Page not found\r\n";
+	const char * good_req = "HTTP/1.1 200 OK\r\nContent-Length: ";
 
-		rd = fgets(buf, 80, file_client);
-		printf("%s\n", buf);
-		char * req = strtok(buf, " ");
+	char * req = strtok(http, " ");
+	printf(req);
+	if(strcmp(req,"GET") == 0){
+		req = strtok(NULL, " ");
 
-		if(strcmp(req,"GET") == 0){
+		if(strcmp(req,"/") == 0){
 			req = strtok(NULL, " ");
-			req = strtok(NULL, " ");
-			if(strcmp(req,"HTTP/1.1\n") == 0 || strcmp(req,"HTTP/1.0\n") == 0){
+			int cpt = strlen(req)-1;
+			while(req[cpt] == '\r' || req[cpt] == '\n'){
+				req[cpt] = '\0';
+				cpt--;
+			}
+			if(strcmp(req,"HTTP/1.1\0") == 0 || strcmp(req,"HTTP/1.0\0") == 0){
 				printf("requete acceptee\n");
-				fprintf(file_client,"%s%zuhttp://\r\n\r\n%s",good_req, strlen(msg_bienvenue), msg_bienvenue);
+				fprintf(file_client,"%s%zu\r\n\r\n%s",good_req, strlen(msg_bienvenue), msg_bienvenue);
 			}
 			else{
-				printf("HTTP");
+				printf("error HTTP\n");
 				fprintf(file_client,"%s",bad_req);
+				}
 			}
-		}
+
 		else{
-			printf("GET");
-			fprintf(file_client,"%s",bad_req);
+			printf("/\n");
+			fprintf(file_client,"%s",url_req);
 		}
 
-		if(rd == NULL){
+	}
+	else{
+		printf("GET\n");
+		fprintf(file_client,"%s",bad_req);
+	}
+}
 
+void traiterClient(int socket_client){
+
+	FILE * file_client = fdopen(socket_client,"w+");
+	char buf[80];
+	char reqHTTP[80];
+
+	fgets(reqHTTP, 80, file_client);
+
+	if(reqHTTP == NULL){
+		fclose(file_client);
+		exit(0);
+	}
+	while(1){
+
+		char *read = fgets(buf, 80, file_client);
+
+
+		if(strcmp(read,"\n") == 0 || strcmp(read,"\r") == 0){
+			traiterHTTP(file_client, reqHTTP);
+			fclose(file_client);
+			break;
+		}
+		if(read == NULL){
 			printf("Deconnexion Client\n");
 			close(socket_client);
 			break;
