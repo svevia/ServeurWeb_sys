@@ -10,7 +10,9 @@
 
 void traiterClient(int socket_client){
 
+	char * msg_bienvenue = "Bonjour, bienvenue sur notre serveur.\r\n";
 	char * bad_req = "HTTP/1.1 400 Bad Request\r\nConnection: close\r\nContent-Length: 17\r\n400 Bad request\r\n";
+	char * good_req = "HTTP/1.1 200 OK\r\nContent-Length: ";
 	FILE * file_client = fdopen(socket_client,"w+");
 	char buf[80];
 	char *rd;
@@ -19,15 +21,14 @@ void traiterClient(int socket_client){
 
 		rd = fgets(buf, 80, file_client);
 		printf("%s\n", buf);
-
 		char * req = strtok(buf, " ");
 
 		if(strcmp(req,"GET") == 0){
-
 			req = strtok(NULL, " ");
-
-			if(strcmp(req,"HTTP/1.1") == 0 || strcmp(req,"HTTP/1.0") == 0){
-				printf("ok");
+			req = strtok(NULL, " ");
+			if(strcmp(req,"HTTP/1.1\n") == 0 || strcmp(req,"HTTP/1.0\n") == 0){
+				printf("requete acceptee\n");
+				fprintf(file_client,"%s%zuhttp://\r\n\r\n%s",good_req, strlen(msg_bienvenue), msg_bienvenue);
 			}
 			else{
 				printf("HTTP");

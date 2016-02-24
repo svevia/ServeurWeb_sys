@@ -12,6 +12,9 @@ void traitement_signal(){
 	if(waitpid(-1, &status, WNOHANG) == -1){
 		perror("waitpid");
 	}
+	if(WIFEXITED(status)){
+		printf("signal: %s", WEXITSTATUS(status));
+	}
 }
 
 void initialiser_signaux(void){
