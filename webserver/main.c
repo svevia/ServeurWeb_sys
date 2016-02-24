@@ -7,9 +7,9 @@
 #include <sys/wait.h>
 #include <stdlib.h>
 #include "socket.h"
+#include "http.h"
 
-
-void traiterHTTP(FILE *file_client, char *http){
+void goHTTP(FILE *file_client, char *http){
 
 	printf(http);
 	const char * msg_bienvenue = "Bonjour, bienvenue sur notre serveur.\r\n";
@@ -51,31 +51,63 @@ void traiterHTTP(FILE *file_client, char *http){
 	}
 }
 
+
+char *fgets_or_exit(char *buffer, int size, FILE *stream){
+		fgets(buffer, size, stream);
+		if(buffer == NULL){
+			printf("Déconnexion Client\n");
+			fclose(stream);
+			exit(0);
+		}
+		return buffer;
+}
+
+int parse_http_request(char *request_line, http_request *request){
+	char * parse = strtok(request_line, " ");
+	if(strcmp(parse,"GET") == 0){
+		request->method = HTTP_GET;
+	}
+	else{
+		printf("Bad method request\n");
+		return 0;
+	}
+	parse = strtok(parse, " ");
+	if(strcmp(parse,"/") == 0){
+		request->url = parse;
+	}
+	else{
+		printf("Bad url request\n");
+		return 0;
+	}
+	parse = strtok(parse, " ");
+	if(strcmp(parse,"HTTP/1.1") == 0){
+		request->major_version = 1;
+	}
+	else if(strcmp(parse,"HTTP/1.0") == 0){
+		request->minor_version = 0;
+	}
+	else{
+		printf("Bad version request\n");
+		return 0;
+	}
+	return 1;
+}
+
 void traiterClient(int socket_client){
 
 	FILE * file_client = fdopen(socket_client,"w+");
-	char buf[80];
+	char read[80];
 	char reqHTTP[80];
 
-	fgets(reqHTTP, 80, file_client);
+	fgets_or_exit(reqHTTP, 80, file_client);
 
-	if(reqHTTP == NULL){
-		fclose(file_client);
-		exit(0);
-	}
 	while(1){
 
-		char *read = fgets(buf, 80, file_client);
-
+		fgets_or_exit(read, 80, file_client);
 
 		if(strcmp(read,"\n") == 0 || strcmp(read,"\r") == 0){
-			traiterHTTP(file_client, reqHTTP);
+			goHTTP(file_client, reqHTTP);
 			fclose(file_client);
-			break;
-		}
-		if(read == NULL){
-			printf("Deconnexion Client\n");
-			close(socket_client);
 			break;
 		}
 	}
@@ -120,7 +152,7 @@ int main(int argc, char **argv) {
 			break;
 
 			default:
-				close(socket_client);
+			close(socket_client);
 		}
 	}
 
