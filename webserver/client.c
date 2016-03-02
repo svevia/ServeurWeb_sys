@@ -17,93 +17,94 @@ void send_response(FILE *client, int code, const char *reason_phrase, const char
 	send_status(client, code, reason_phrase);
 	fprintf(client,"%s\r\n",message_body);
 }
+int parse_http_request(char *request_line, http_request *request){
+	char* parse = strtok(request_line, " ");
+	if(parse == NULL){
+		return 1;
+	}
+	else if(strcmp(parse,"GET") == 0){
+		request->method = HTTP_GET;
+	}
+	else {
+		request->method = HTTP_UNSUPPORTED;
+	}
 
-void goHTTP(FILE *file_client, char *http){
-
-	printf(http);
-	const char * msg_bienvenue = "Bonjour, bienvenue sur notre serveur.\r\n";
-
-	char * req = strtok(http, " ");
-	printf(req);
-	if(strcmp(req,"GET") == 0){
-		req = strtok(NULL, " ");
-
-		if(strcmp(req,"/") == 0){
-			req = strtok(NULL, " ");
-			int cpt = strlen(req)-1;
-			while(req[cpt] == '\r' || req[cpt] == '\n'){
-				req[cpt] = '\0';
-				cpt--;
-			}
-			if(strcmp(req,"HTTP/1.1\0") == 0 || strcmp(req,"HTTP/1.0\0") == 0){
-				send_response(file_client,200,"OK",msg_bienvenue);
-			}
-			else{
-				send_response(file_client,400,"Bad Request","Bad Request\r\n");
-				}
-			}
-
-		else{
-			send_response(file_client,404,"Not found","Not found\r\n");
-		}
-
+	parse = strtok(NULL, " ");
+	if(parse == NULL){
+		return 1;
 	}
 	else{
-		send_response(file_client,405,"Method Not Allowed","Method Not Allowed\r\n");
+		request->url = strdup(parse); // chemin
 	}
+
+	parse = strtok(NULL, " ");
+	if(parse == NULL){
+		return 1;
+	}
+	else if(strcmp(parse,"HTTP/1.1") == 0){
+		request->major_version = 1;
+		request->minor_version = 1;
+	}
+	else if(strcmp(parse,"HTTP/1.0") == 0){
+		request->major_version = 1;
+		request->minor_version = 0;
+	}
+	else{
+		return 1;
+	}
+
+	parse = strtok(NULL, " ");
+	if(parse != NULL){
+		return 1;
+	}
+	return 0;
+}
+
+void goHTTP(FILE *file_client, char *http){
+	const char * msg_bienvenue = "Bonjour, bienvenue sur notre serveur.\r\n";
+
+	http_request request;
+	int bad_request = parse_http_request(http, &request);
+
+
+	if (bad_request)
+	send_response ( file_client , 400 , " Bad Request " , " Bad request \r \n " );
+	else if (request.method != HTTP_GET )
+	send_response (file_client , 405 , " Method Not Allowed " , " Method Not Allowed \r \n " );
+	else if ( strcmp (request.url , "/" ) == 0)
+	send_response (file_client, 200, "OK", msg_bienvenue);
+	else
+	send_response ( file_client , 404 , " Not Found " , " Not Found \r \n " );
 }
 
 
 
 char *fgets_or_exit(char *buffer, int size, FILE *stream){
-		fgets(buffer, size, stream);
+		fgets(buffer, size, stream); 
 		if(buffer == NULL){
 			printf("Déconnexion Client\n");
 			fclose(stream);
 			exit(0);
 		}
+
+		char* p = strchr(buffer,'\n');
+		if(p){
+			if(*(p - 1) == '\r'){
+				p--;
+			}
+			*p = '\0';
+		}
 		return buffer;
 }
 
-int parse_http_request(char *request_line, http_request *request){
-	char * parse = strtok(request_line, " ");
-	if(strcmp(parse,"GET") == 0){
-		request->method = HTTP_GET;
-	}
-	else{
-		printf("Bad method request\n");
-		return 0;
-	}
-	parse = strtok(parse, " ");
-	if(strcmp(parse,"/") == 0){
-		request->url = parse;
-	}
-	else{
-		printf("Bad url request\n");
-		return 0;
-	}
-	parse = strtok(parse, " ");
-	if(strcmp(parse,"HTTP/1.1") == 0){
-		request->major_version = 1;
-	}
-	else if(strcmp(parse,"HTTP/1.0") == 0){
-		request->minor_version = 0;
-	}
-	else{
-		request->method = HTTP_UNSUPPORTED;
-		return 0;
-	}
-	return 1;
-}
-
 void skip_headers(FILE * file_client){
-	char read[80];
+	char read[8192];
 	while(1){
 
-		fgets_or_exit(read, 80, file_client);
-
-		if(strcmp(read,"\n") == 0 || strcmp(read,"\r\n") == 0){
-			break;
+		fgets_or_exit(read, 8192, file_client);
+		if(read[0] == '\0'){
+			return;
 		}
 	}
 }
+	char * rewrite_url(char *url);
