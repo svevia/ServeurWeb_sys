@@ -9,14 +9,19 @@
 #include "socket.h"
 #include "http.h"
 
+void send_status(FILE *file_client, int code, const char *reason_phrase){
+	fprintf(file_client,"HTTP/1.1 %i %s\r\n",code, reason_phrase);
+}
+
+void send_response(FILE *client, int code, const char *reason_phrase, const char *message_body){
+	send_status(client, code, reason_phrase);
+	fprintf(client,"%s\r\n",message_body);
+}
 
 void goHTTP(FILE *file_client, char *http){
 
 	printf(http);
 	const char * msg_bienvenue = "Bonjour, bienvenue sur notre serveur.\r\n";
-	const char * bad_req = "HTTP/1.1 400 Bad Request\r\nConnection: close\r\nContent-Length: 17\r\n400 Bad request\r\n";
-	const char * url_req = "HTTP/1.1 404 Page not found\r\nConnection: close\r\nContent-Length: 20\r\n404 Page not found\r\n";
-	const char * good_req = "HTTP/1.1 200 OK\r\nContent-Length: ";
 
 	char * req = strtok(http, " ");
 	printf(req);
@@ -31,26 +36,23 @@ void goHTTP(FILE *file_client, char *http){
 				cpt--;
 			}
 			if(strcmp(req,"HTTP/1.1\0") == 0 || strcmp(req,"HTTP/1.0\0") == 0){
-				printf("requete acceptee\n");
-				fprintf(file_client,"%s%zu\r\n\r\n%s",good_req, strlen(msg_bienvenue), msg_bienvenue);
+				send_response(file_client,200,"OK",msg_bienvenue);
 			}
 			else{
-				printf("error HTTP\n");
-				fprintf(file_client,"%s",bad_req);
+				send_response(file_client,400,"Bad Request","Bad Request\r\n");
 				}
 			}
 
 		else{
-			printf("/\n");
-			fprintf(file_client,"%s",url_req);
+			send_response(file_client,404,"Not found","Not found\r\n");
 		}
 
 	}
 	else{
-		printf("GET\n");
-		fprintf(file_client,"%s",bad_req);
+		send_response(file_client,405,"Method Not Allowed","Method Not Allowed\r\n");
 	}
 }
+
 
 
 char *fgets_or_exit(char *buffer, int size, FILE *stream){
@@ -88,7 +90,7 @@ int parse_http_request(char *request_line, http_request *request){
 		request->minor_version = 0;
 	}
 	else{
-		printf("Bad version request\n");
+		request->method = HTTP_UNSUPPORTED;
 		return 0;
 	}
 	return 1;
