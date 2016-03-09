@@ -66,20 +66,18 @@ int parse_http_request(char *request_line, http_request *request){
 		request->major_version = 1;
 		request->minor_version = 0;
 	}
-	else{
+	else
 		return 1;
-	}
-
+	
 	parse = strtok(NULL, " ");
-	if(parse != NULL){
+	if(parse != NULL)
 		return 1;
-	}
+
 	return 0;
 }
 
-void goHTTP(FILE *file_client, char *http){
+void goHTTP(FILE *file_client, char *http, const char *document_root){
 	const char * msg_bienvenue = "Bonjour, bienvenue sur notre serveur.\r\n";
-
 	http_request request;
 	int bad_request = parse_http_request(http, &request);
 
@@ -90,7 +88,7 @@ void goHTTP(FILE *file_client, char *http){
 	send_response (file_client , 405 , "Method Not Allowed", "Method Not Allowed\r\n" );
 	else{
 		char *url = rewrite_url(request.url);
-		int file = check_and_open(url,"/home/infoetu/catricea/ServeurWeb_sys/www/");
+		int file = check_and_open(url, document_root);
 		printf("%d\n",file);
 		if(file == -1)
 		send_response (file_client, 404, "Not Found" , "Not Found\r\n");

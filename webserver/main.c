@@ -5,34 +5,45 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <sys/wait.h>
+#include <sys/stat.h>
 #include <stdlib.h>
+#include <fcntl.h>
 #include "socket.h"
 #include "http.h"
 #include "client.h"
 
 
-void traiterClient(int socket_client){
+void traiterClient(int socket_client, const char *document_root){
 
 	FILE * file_client = fdopen(socket_client,"w+");
 	char reqHTTP[8192];
 
 	fgets_or_exit(reqHTTP, 8192, file_client);
 	skip_headers(file_client);
-	goHTTP(file_client, reqHTTP);
+	goHTTP(file_client, reqHTTP, document_root);
 	fclose(file_client);
 	exit(0);
 }
 
-int main(int argc, char **argv) {
+int main(int argc, char **argv){
 
-	if(argc > 1 && strcmp(argv[1], "-advice") == 0) {
-		printf("Don’t Panic!\n");
-		return 42;
+	const char *document = argv[1];
+	struct stat st_doc;
+
+	if(argc > 1){
+		stat(document, &st_doc);
+		if(!S_ISDIR(st_doc.st_mode)){
+			fprintf(stderr, "dossier racine invalide\n");
+			exit(0);
+		}
+		if(open(document, O_RDONLY) == -1){
+			fprintf(stderr, "permission refusée ou dossier non existant\n");
+			exit(0);
+		}
 	}
-	printf("Need an advice?\n");
 
 	int socket_client;
-	int socket_serveur= creer_serveur(8080);
+	int socket_serveur = creer_serveur(8080);
 
 	if(socket_serveur == -1){
 		return 1;
@@ -45,25 +56,24 @@ int main(int argc, char **argv) {
 			perror("accept");
 		}
 
-		int pid= fork();
+		int pid = fork();
 		initialiser_signaux();
 
 		switch(pid){
 
 			case -1:
-				perror("fork");
-				return -1;
+			perror("fork");
+			return -1;
 			break;
 
 			case 0:
-			traiterClient(socket_client);	
+			traiterClient(socket_client, document);	
 			break;
 
 			default:
 			close(socket_client);
 		}
 	}
-
 	return 0;
 }
 

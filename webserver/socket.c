@@ -9,16 +9,14 @@ int socket_serveur;
 
 void traitement_signal(){
 	int status;
-	if(waitpid(-1, &status, WNOHANG) == -1){
+	if(waitpid(-1, &status, WNOHANG) == -1)
 		perror("waitpid");
-	}
-	if(WIFEXITED(status)){
+
+	if(WIFEXITED(status))
 		printf("code de retour: %d\n", WEXITSTATUS(status));
-	}
+
 	if (WIFSIGNALED(status))
-	{
 		printf("fils terminé par signal %d\n", WTERMSIG(status));
-	}
 }
 
 void initialiser_signaux(void){
