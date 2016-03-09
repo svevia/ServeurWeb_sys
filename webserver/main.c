@@ -3,9 +3,9 @@
 #include <string.h>
 #include <sys/types.h>
 #include <sys/socket.h>
-#include <arpa/inet.h>
 #include <sys/wait.h>
 #include <sys/stat.h>
+#include <arpa/inet.h>
 #include <stdlib.h>
 #include <fcntl.h>
 #include "socket.h"
@@ -33,11 +33,11 @@ int main(int argc, char **argv){
 	if(argc > 1){
 		stat(document, &st_doc);
 		if(!S_ISDIR(st_doc.st_mode)){
-			fprintf(stderr, "dossier racine invalide\n");
+			fprintf(stderr, "dossier racine invalide ou non existant\n");
 			exit(0);
 		}
 		if(open(document, O_RDONLY) == -1){
-			fprintf(stderr, "permission refusée ou dossier non existant\n");
+			fprintf(stderr, "permission refusée\n");
 			exit(0);
 		}
 	}
@@ -76,4 +76,3 @@ int main(int argc, char **argv){
 	}
 	return 0;
 }
-

@@ -3,11 +3,11 @@
 #include <string.h>
 #include <sys/types.h>
 #include <sys/socket.h>
-#include <arpa/inet.h>
 #include <sys/wait.h>
+#include <sys/stat.h>
+#include <arpa/inet.h>
 #include <stdlib.h>
 #include <fcntl.h>
-#include <sys/stat.h>
 #include "socket.h"
 #include "http.h"
 
@@ -20,44 +20,81 @@ void send_response(FILE *client, int code, const char *reason_phrase, const char
 	fprintf(client,"%s\r\n",message_body);
 }
 
-char * rewrite_url(char *url){
-	return strtok(url, "?");
+int get_file_size(FILE * file){
+	int fd = fileno(file);
+	struct stat st;
+	fstat(fd, &st);
+	return st.st_size;
 }
 
-int check_and_open(const char * url, const char *document_root){
+int copy(FILE *in, FILE *out){
+	char buffer[1024];
+	while(fgets(buffer, 1024, in) != NULL){
+		fprintf(out, buffer);
+	}
+	fflush(out);
+	return 0;
+}
+
+void send_file(FILE *client, FILE *fichier){
+	send_status(client, 200, "OK");
+	fflush(fichier);
+	fprintf(client,"Content-length:%d\r\n\r\n",get_file_size(fichier));
+	copy(fichier, client);
+}
+
+char *rewrite_url(char *url){
+	/*char c;
+	int i = 0;
+	while((c = url[i]) != '\0'){
+		if(c == '?'){
+			url[i] = '\0';
+			break;
+		}
+		i++;
+	}*/
+	return strtok(url, "?");
+	//return url;
+}
+
+FILE *check_and_open(const char *url, const char *document_root){
 	struct stat st;
 	char buffer[1024];
 	snprintf(buffer, 1024, "%s%s", document_root, url);
 	stat(buffer, &st);
-	if(S_ISREG(st.st_mode))
-		return open(buffer, O_RDONLY);
-	return -1;
+	if(S_ISREG(st.st_mode)){
+		return fdopen(*buffer, "r");
+		printf("ouvrir");
+	}
+	else
+		return NULL;
 }
 
+
 int parse_http_request(char *request_line, http_request *request){
-	char* parse = strtok(request_line, " ");
-	if(parse == NULL){
+	char *parse = strtok(request_line, " ");
+	if(parse == NULL)
 		return 1;
-	}
-	else if(strcmp(parse,"GET") == 0){
+	
+	else if(strcmp(parse,"GET") == 0)
 		request->method = HTTP_GET;
-	}
-	else {
+	
+	else
 		request->method = HTTP_UNSUPPORTED;
-	}
+	
 
 	parse = strtok(NULL, " ");
-	if(parse == NULL){
+	if(parse == NULL)
 		return 1;
-	}
-	else{
+
+	else
 		request->url = strdup(parse); // chemin
-	}
-
+	
 	parse = strtok(NULL, " ");
-	if(parse == NULL){
+
+	if(parse == NULL)
 		return 1;
-	}
+	
 	else if(strcmp(parse,"HTTP/1.1") == 0){
 		request->major_version = 1;
 		request->minor_version = 1;
@@ -70,6 +107,7 @@ int parse_http_request(char *request_line, http_request *request){
 		return 1;
 	
 	parse = strtok(NULL, " ");
+
 	if(parse != NULL)
 		return 1;
 
@@ -77,7 +115,6 @@ int parse_http_request(char *request_line, http_request *request){
 }
 
 void goHTTP(FILE *file_client, char *http, const char *document_root){
-	const char * msg_bienvenue = "Bonjour, bienvenue sur notre serveur.\r\n";
 	http_request request;
 	int bad_request = parse_http_request(http, &request);
 
@@ -88,12 +125,12 @@ void goHTTP(FILE *file_client, char *http, const char *document_root){
 	send_response (file_client , 405 , "Method Not Allowed", "Method Not Allowed\r\n" );
 	else{
 		char *url = rewrite_url(request.url);
-		int file = check_and_open(url, document_root);
-		printf("%d\n",file);
-		if(file == -1)
-		send_response (file_client, 404, "Not Found" , "Not Found\r\n");
-		else
-		send_response (file_client, 200, "OK", msg_bienvenue);
+		FILE *file = check_and_open(url, document_root);
+		if(file == NULL)
+			send_response (file_client, 404, "Not Found" , "Not Found\r\n");
+		else{
+			send_file(file_client, file);
+		}
 	}
 }
 
@@ -120,11 +157,8 @@ char *fgets_or_exit(char *buffer, int size, FILE *stream){
 void skip_headers(FILE * file_client){
 	char read[8192];
 	while(1){
-
 		fgets_or_exit(read, 8192, file_client);
-		if(read[0] == '\0'){
+		if(read[0] == '\0')
 			return;
-		}
 	}
 }
-	

@@ -2,8 +2,9 @@
 #include <signal.h>
 #include <sys/types.h>
 #include <sys/socket.h>
-#include <arpa/inet.h>
 #include <sys/wait.h>
+#include <arpa/inet.h>
+
 
 int socket_serveur;
 
@@ -63,8 +64,5 @@ int creer_serveur(int port){
 		perror("listen socket_serveur");
 		return -1;
 	}
-
-
 	return socket_serveur;
 }
-
