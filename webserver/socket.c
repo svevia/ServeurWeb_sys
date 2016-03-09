@@ -13,7 +13,11 @@ void traitement_signal(){
 		perror("waitpid");
 	}
 	if(WIFEXITED(status)){
-		printf("signal: %s", WEXITSTATUS(status));
+		printf("code de retour: %d\n", WEXITSTATUS(status));
+	}
+	if (WIFSIGNALED(status))
+	{
+		printf("fils terminé par signal %d\n", WTERMSIG(status));
 	}
 }
 

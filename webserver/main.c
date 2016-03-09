@@ -14,10 +14,9 @@
 void traiterClient(int socket_client){
 
 	FILE * file_client = fdopen(socket_client,"w+");
+	char reqHTTP[8192];
 
-	char reqHTTP[80];
-
-	fgets_or_exit(reqHTTP, 80, file_client);
+	fgets_or_exit(reqHTTP, 8192, file_client);
 	skip_headers(file_client);
 	goHTTP(file_client, reqHTTP);
 	fclose(file_client);
@@ -26,7 +25,6 @@ void traiterClient(int socket_client){
 
 int main(int argc, char **argv) {
 
-	/* Arnold Robbins in the LJ of February ’95, describing RCS */
 	if(argc > 1 && strcmp(argv[1], "-advice") == 0) {
 		printf("Don’t Panic!\n");
 		return 42;

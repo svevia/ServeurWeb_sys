@@ -6,6 +6,8 @@
 #include <arpa/inet.h>
 #include <sys/wait.h>
 #include <stdlib.h>
+#include <fcntl.h>
+#include <sys/stat.h>
 #include "socket.h"
 #include "http.h"
 
@@ -17,6 +19,21 @@ void send_response(FILE *client, int code, const char *reason_phrase, const char
 	send_status(client, code, reason_phrase);
 	fprintf(client,"%s\r\n",message_body);
 }
+
+char * rewrite_url(char *url){
+	return strtok(url, "?");
+}
+
+int check_and_open(const char * url, const char *document_root){
+	struct stat st;
+	char buffer[1024];
+	snprintf(buffer, 1024, "%s%s", document_root, url);
+	stat(buffer, &st);
+	if(S_ISREG(st.st_mode))
+		return open(buffer, O_RDONLY);
+	return -1;
+}
+
 int parse_http_request(char *request_line, http_request *request){
 	char* parse = strtok(request_line, " ");
 	if(parse == NULL){
@@ -68,13 +85,18 @@ void goHTTP(FILE *file_client, char *http){
 
 
 	if (bad_request)
-	send_response ( file_client , 400 , " Bad Request " , " Bad request \r \n " );
+	send_response (file_client, 400 , "Bad Request", "Bad request\r\n");
 	else if (request.method != HTTP_GET )
-	send_response (file_client , 405 , " Method Not Allowed " , " Method Not Allowed \r \n " );
-	else if ( strcmp (request.url , "/" ) == 0)
-	send_response (file_client, 200, "OK", msg_bienvenue);
-	else
-	send_response ( file_client , 404 , " Not Found " , " Not Found \r \n " );
+	send_response (file_client , 405 , "Method Not Allowed", "Method Not Allowed\r\n" );
+	else{
+		char *url = rewrite_url(request.url);
+		int file = check_and_open(url,"/home/infoetu/catricea/ServeurWeb_sys/www/");
+		printf("%d\n",file);
+		if(file == -1)
+		send_response (file_client, 404, "Not Found" , "Not Found\r\n");
+		else
+		send_response (file_client, 200, "OK", msg_bienvenue);
+	}
 }
 
 
@@ -107,4 +129,4 @@ void skip_headers(FILE * file_client){
 		}
 	}
 }
-	char * rewrite_url(char *url);
+	
