@@ -52,8 +52,10 @@ FILE *check_and_open(const char *url, const char *document_root){
 	char buffer[1024];
 	snprintf(buffer, 1024, "%s%s", document_root, url);
 	stat(buffer, &st);
-	printf("%s\n",buffer);
-	return fopen(buffer, "r");
+	if(S_ISREG(st.st_mode))
+		return fopen(buffer, "r");
+	else
+		return NULL;
 }
 
 int parse_http_request(char *request_line, http_request *request){
