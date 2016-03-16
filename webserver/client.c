@@ -10,6 +10,8 @@
 #include <fcntl.h>
 #include "socket.h"
 #include "http.h"
+#include "mime.h"
+
 
 void send_status(FILE *file_client, int code, const char *reason_phrase){
 	fprintf(file_client,"HTTP/1.1 %i %s\r\n",code, reason_phrase);
@@ -20,7 +22,7 @@ void send_response(FILE *client, int code, const char *reason_phrase, const char
 	fprintf(client,"%s\r\n",message_body);
 }
 
-int get_file_size(FILE * file){
+int get_file_size(FILE *file){
 	int fd = fileno(file);
 	struct stat st;
 	fstat(fd, &st);
@@ -29,17 +31,20 @@ int get_file_size(FILE * file){
 
 int copy(FILE *in, FILE *out){
 	char buffer[1024];
-	while(fgets(buffer, 1024, in) != NULL){
-		fprintf(out, buffer);
+	int t;
+	while((t =fread(buffer, 1, 1024, in)) != 0){
+		fwrite(buffer, 1, t, out);
 	}
 	fflush(out);
 	return 0;
 }
 
-void send_file(FILE *client, FILE *fichier){
-	send_status(client, 200, "OK");
-	fflush(fichier);
-	fprintf(client,"Content-length:%d\r\n\r\n",get_file_size(fichier));
+void send_file(FILE *client, FILE *fichier, const char *url){
+	const char *mime = get_mime(url);
+	send_status(client, 200, "OK");	
+	fprintf(client,"Content-length:%d\r\n",get_file_size(fichier));
+	fprintf(client,"Content-type:%s\r\n",mime);
+	fprintf(client, "\r\n");
 	copy(fichier, client);
 }
 
@@ -112,12 +117,15 @@ void goHTTP(FILE *file_client, char *http, const char *document_root){
 	send_response (file_client , 405 , "Method Not Allowed", "Method Not Allowed\r\n" );
 	else{
 		char *url = rewrite_url(request.url);
+		if(strcmp(url,"/") == 0)
+		url = "/index.html";
+		
 		FILE *file = check_and_open(url, document_root);
+
 		if(file == NULL)
 			send_response (file_client, 404, "Not Found" , "Not Found\r\n");
-		else{
-			send_file(file_client, file);
-		}
+		else
+			send_file(file_client, file, url);
 	}
 }
 
