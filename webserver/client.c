@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <errno.h>
 #include <unistd.h>
 #include <string.h>
 #include <sys/types.h>
@@ -56,6 +57,7 @@ FILE *check_and_open(const char *url, const char *document_root){
 	struct stat st;
 	char buffer[1024];
 	snprintf(buffer, 1024, "%s%s", document_root, url);
+	printf(buffer);
 	stat(buffer, &st);
 	if(S_ISREG(st.st_mode))
 		return fopen(buffer, "r");
@@ -74,7 +76,6 @@ int parse_http_request(char *request_line, http_request *request){
 	else
 		request->method = HTTP_UNSUPPORTED;
 	
-
 	parse = strtok(NULL, " ");
 	if(parse == NULL)
 		return 1;
@@ -110,7 +111,6 @@ void goHTTP(FILE *file_client, char *http, const char *document_root){
 	http_request request;
 	int bad_request = parse_http_request(http, &request);
 
-
 	if (bad_request)
 	send_response (file_client, 400 , "Bad Request", "Bad request\r\n");
 	else if (request.method != HTTP_GET )
@@ -121,9 +121,12 @@ void goHTTP(FILE *file_client, char *http, const char *document_root){
 		url = "/index.html";
 		
 		FILE *file = check_and_open(url, document_root);
-
-		if(file == NULL)
-			send_response (file_client, 404, "Not Found" , "Not Found\r\n");
+		if(file == NULL){
+			if(errno == EACCES)
+				send_response (file_client, 403, "Forbidden" , "Forbidden\r\n");
+			else
+				send_response (file_client, 404, "Not Found" , "Not Found\r\n");
+		}
 		else
 			send_file(file_client, file, url);
 	}
