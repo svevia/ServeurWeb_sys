@@ -44,17 +44,7 @@ void send_file(FILE *client, FILE *fichier){
 }
 
 char *rewrite_url(char *url){
-	/*char c;
-	int i = 0;
-	while((c = url[i]) != '\0'){
-		if(c == '?'){
-			url[i] = '\0';
-			break;
-		}
-		i++;
-	}*/
 	return strtok(url, "?");
-	//return url;
 }
 
 FILE *check_and_open(const char *url, const char *document_root){
@@ -62,14 +52,9 @@ FILE *check_and_open(const char *url, const char *document_root){
 	char buffer[1024];
 	snprintf(buffer, 1024, "%s%s", document_root, url);
 	stat(buffer, &st);
-	if(S_ISREG(st.st_mode)){
-		return fdopen(*buffer, "r");
-		printf("ouvrir");
-	}
-	else
-		return NULL;
+	printf("%s\n",buffer);
+	return fopen(buffer, "r");
 }
-
 
 int parse_http_request(char *request_line, http_request *request){
 	char *parse = strtok(request_line, " ");
@@ -88,7 +73,7 @@ int parse_http_request(char *request_line, http_request *request){
 		return 1;
 
 	else
-		request->url = strdup(parse); // chemin
+		request->url = strdup(parse);
 	
 	parse = strtok(NULL, " ");
 
@@ -133,8 +118,6 @@ void goHTTP(FILE *file_client, char *http, const char *document_root){
 		}
 	}
 }
-
-
 
 char *fgets_or_exit(char *buffer, int size, FILE *stream){
 		fgets(buffer, size, stream); 

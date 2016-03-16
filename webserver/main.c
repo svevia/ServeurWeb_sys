@@ -30,7 +30,7 @@ int main(int argc, char **argv){
 	const char *document = argv[1];
 	struct stat st_doc;
 
-	if(argc > 1){
+	if(argc == 2){
 		stat(document, &st_doc);
 		if(!S_ISDIR(st_doc.st_mode)){
 			fprintf(stderr, "dossier racine invalide ou non existant\n");
@@ -41,7 +41,11 @@ int main(int argc, char **argv){
 			exit(0);
 		}
 	}
-
+	else{
+		fprintf(stderr, "nombre d'arguments non valide\n");
+		exit(0);
+	}
+	
 	int socket_client;
 	int socket_serveur = creer_serveur(8080);
 
